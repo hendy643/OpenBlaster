@@ -1,0 +1,17 @@
+name: Support
+description: Something does not work with a supported device
+labels: [support]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened, and what did you expect?
+    validations:
+      required: true
+  - type: textarea
+    id: report
+    attributes:
+      label: Output of scripts/troubleshoot.sh
+      render: text
+    validations:
+      required: true

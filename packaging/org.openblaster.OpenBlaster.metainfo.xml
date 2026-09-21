@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<component type="desktop-application">
+  <id>org.openblaster.OpenBlaster</id>
+  <name>OpenBlaster</name>
+  <summary>Control Creative Sound Blaster cards</summary>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>Apache-2.0</project_license>
+  <developer id="io.github.hendy643">
+    <name>hendy643</name>
+  </developer>
+  <description>
+    <p>
+      OpenBlaster controls Creative Sound Blaster PCIe cards (AE-5 and AE-5 Plus first) on Linux: outputs,
+      speakers, sound effects, the equalizer, microphone effects and the card's LED lighting.
+    </p>
+    <p>
+      It works with the driver already in the kernel and starts in the tray when you log in. The LED
+      lighting needs write access to the card's register window, which the package grants to the audio group.
+    </p>
+  </description>
+  <launchable type="desktop-id">org.openblaster.OpenBlaster.desktop</launchable>
+  <url type="homepage">https://github.com/hendy643/SBX</url>
+  <url type="bugtracker">https://github.com/hendy643/SBX/issues</url>
+  <categories>
+    <category>AudioVideo</category>
+    <category>Audio</category>
+    <category>Mixer</category>
+  </categories>
+  <provides>
+    <binary>openblaster</binary>
+  </provides>
+  <supports>
+    <control>pointing</control>
+    <control>keyboard</control>
+  </supports>
+  <content_rating type="oars-1.1"/>
+  <releases>
+    <release version="@VERSION@" date="@DATE@"/>
+  </releases>
+</component>

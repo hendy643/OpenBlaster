@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=OpenBlaster
+GenericName=Sound Blaster control
+Comment=Control Creative Sound Blaster cards: outputs, effects, equalizer and microphone
+Exec=openblaster
+Icon=org.openblaster.OpenBlaster
+Terminal=false
+Categories=AudioVideo;Audio;Mixer;
+Keywords=Creative;Sound Blaster;AE-5;audio;equalizer;
+StartupWMClass=org.openblaster.OpenBlaster

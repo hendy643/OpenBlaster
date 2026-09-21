@@ -1,0 +1,23 @@
+name: New device
+description: Ask for support for a Sound Blaster device
+labels: [new-device]
+body:
+  - type: input
+    id: name
+    attributes:
+      label: Device name
+      placeholder: Sound Blaster AE-9
+    validations:
+      required: true
+  - type: textarea
+    id: ids
+    attributes:
+      label: Hardware IDs
+      description: Output of `lspci -nnk -d 1102:` (or `lsusb -d 041e:`) and `grep -H -i 'Vendor Id\|Subsystem Id' /proc/asound/card*/codec#*`
+      render: text
+    validations:
+      required: true
+  - type: textarea
+    id: notes
+    attributes:
+      label: Anything else

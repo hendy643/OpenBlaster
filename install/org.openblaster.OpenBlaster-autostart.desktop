@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=OpenBlaster
+Comment=Start OpenBlaster in the tray at login
+Exec=openblaster --background
+Icon=org.openblaster.OpenBlaster
+Terminal=false
+NoDisplay=true
+X-GNOME-Autostart-enabled=true
