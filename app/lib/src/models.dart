@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: GPL-3.0-or-later
 
 /// How a control is shown: a switch, a slider, a list of choices or a colour (0xRRGGBB).
 enum ControlKind { toggle, range, choice, color }

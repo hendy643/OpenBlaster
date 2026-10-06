@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# SPDX-License-Identifier: Apache-2.0
+# SPDX-License-Identifier: GPL-3.0-or-later
 # Build OpenBlaster and install it.
 #
 #   scripts/install.sh [--no-build] [PREFIX]   (default /usr/local; DESTDIR is honoured)
@@ -42,7 +42,7 @@ install -m 644 install/org.openblaster.OpenBlaster-autostart.desktop \
 install -m 644 app/assets/openblaster.svg \
     "$dest$prefix/share/icons/hicolor/scalable/apps/org.openblaster.OpenBlaster.svg"
 install -m 644 "$metainfo" "$dest$prefix/share/metainfo/org.openblaster.OpenBlaster.metainfo.xml"
-install -m 644 LICENSES/Apache-2.0.txt "$dest$prefix/share/licenses/openblaster/Apache-2.0.txt"
+install -m 644 LICENSE "$dest$prefix/share/licenses/openblaster/LICENSE"
 install -m 644 install/70-openblaster.rules "$dest$prefix/lib/udev/rules.d/70-openblaster.rules"
 # the card's 5.1 profile in the driver's channel order (the udev rule above points the card at it; PipeWire reads
 # profile sets from /usr/share/alsa-card-profile, so with another prefix it is not found)

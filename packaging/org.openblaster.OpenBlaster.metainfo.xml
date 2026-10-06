@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- SPDX-License-Identifier: CC0-1.0 -->
 <component type="desktop-application">
   <id>org.openblaster.OpenBlaster</id>
   <name>OpenBlaster</name>
   <summary>Control Creative Sound Blaster cards</summary>
   <metadata_license>CC0-1.0</metadata_license>
-  <project_license>Apache-2.0</project_license>
+  <project_license>GPL-3.0-or-later</project_license>
   <developer id="io.github.hendy643">
     <name>hendy643</name>
   </developer>

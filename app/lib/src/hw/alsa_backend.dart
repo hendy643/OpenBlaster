@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: GPL-3.0-or-later
 import '../models.dart';
 import 'alsa_io.dart';
 import 'backend.dart';

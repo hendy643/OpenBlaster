@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: GPL-3.0-or-later
 
 /// One ALSA control, and what the app calls it. A card that lacks the control simply does not offer it.
 class Mapping {

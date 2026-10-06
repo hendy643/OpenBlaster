@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: GPL-3.0-or-later
 import 'dart:math' as math;
 
 /// An LED colour, 8 bits a channel.

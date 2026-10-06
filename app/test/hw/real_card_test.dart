@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: GPL-3.0-or-later
 // Reads (never writes) the real card, if this machine has one, to prove the libasound bindings work.
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openblaster/src/hw/alsa_backend.dart';

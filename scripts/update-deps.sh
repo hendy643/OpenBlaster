@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# SPDX-License-Identifier: Apache-2.0
+# SPDX-License-Identifier: GPL-3.0-or-later
 # Update the Flutter dependencies to their newest versions, then prove the app still works.
 #
 #   scripts/update-deps.sh [--dry-run] [--no-verify]

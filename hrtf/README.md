@@ -8,4 +8,4 @@ matter for the label: `atmos`, `cmss_game`, `dtshx`, `sbx33` ... (see `profileLa
 
 They are recordings of other companies' processing (Dolby, DTS, Creative, Razer, Aureal, Valve's Steam Audio),
 collected in the HRTF Database (https://airtable.com/appayGNkn3nSuXkaz/shruimhjdSakUPg2m/tbloLjoZKWJDnLtTc).
-Their rights belong to their owners and they are **not** covered by this project's Apache-2.0 licence.
+Their rights belong to their owners and they are **not** covered by this project's GPL-3.0-or-later licence.

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# SPDX-License-Identifier: Apache-2.0
+# SPDX-License-Identifier: GPL-3.0-or-later
 # Build the release bundle once and package it with fpm (https://fpm.readthedocs.io):
 #
 #   scripts/package.sh [--no-build] [FORMAT...]      FORMAT: tar deb rpm pacman   (default: all four)
@@ -24,7 +24,7 @@ DESTDIR=$stage scripts/install.sh "${build[@]}" /usr
 
 fpm_common=(
     -s dir -C "$stage" -n openblaster -v "$version" --iteration 1
-    --license Apache-2.0 --url https://github.com/hendy643/SBX
+    --license GPL-3.0-or-later --url https://github.com/hendy643/SBX
     --maintainer 'hendy643 <hendy643@users.noreply.github.com>'
     --description 'Control Creative Sound Blaster cards: outputs, effects, equalizer, microphone and LED lighting'
     --category sound

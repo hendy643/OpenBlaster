@@ -63,3 +63,9 @@ App flags: `--background`, `--no-tray`, `--verbose`, `--demo`.
 
 See [DEVELOPMENT.md](DEVELOPMENT.md) for the code layout, adding a control, the lighting permission and releasing.
 HRTF files and their licensing are described in [hrtf/README.md](hrtf/README.md).
+
+## Licence
+
+OpenBlaster is free software: you can redistribute it and/or modify it under the terms of the GNU General Public
+License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later
+version. See [LICENSE](LICENSE). It comes with no warranty.

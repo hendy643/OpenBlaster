@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# SPDX-License-Identifier: Apache-2.0
+# SPDX-License-Identifier: GPL-3.0-or-later
 # Does the card's DSP fold 5.1 down to the headphones when Surround is on?
 #
 #   scripts/surround-test.sh [--wait] [CARD]      (default: the first Creative card)

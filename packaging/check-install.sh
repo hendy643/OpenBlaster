@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# SPDX-License-Identifier: Apache-2.0
+# SPDX-License-Identifier: GPL-3.0-or-later
 # After a package is installed: every library the app and its plugins need must resolve, including the one the
 # app opens at run time (libasound). Run in the CI container that installed the package.
 #   packaging/check-install.sh [APPDIR]     (default /usr/lib/openblaster)

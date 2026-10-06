@@ -1,4 +1,4 @@
-# SPDX-License-Identifier: Apache-2.0
+# SPDX-License-Identifier: GPL-3.0-or-later
 # Let members of the audio group drive the AE-5 / AE-5 Plus LEDs from OpenBlaster, which runs as you, not
 # as root. The LEDs are on two pins of the controller that are reached through the card's BAR2 register
 # window, exposed by the kernel as the resource2 file of the PCI device. Without this rule OpenBlaster

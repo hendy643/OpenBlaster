@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
 # Channel test for OpenBlaster's virtual surround sink.
 #
 #   scripts/virtual-surround-test.sh [--volume PCT] [--noise] [--loops N]

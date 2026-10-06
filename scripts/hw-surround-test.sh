@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# SPDX-License-Identifier: Apache-2.0
+# SPDX-License-Identifier: GPL-3.0-or-later
 # Does each channel come out of the card's DSP where it should, on Headphone with Surround on?
 #
 #   scripts/hw-surround-test.sh [--volume PCT] [CARD]      (default: the first Creative card)

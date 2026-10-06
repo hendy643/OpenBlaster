@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# SPDX-License-Identifier: Apache-2.0
+# SPDX-License-Identifier: GPL-3.0-or-later
 # Run OpenBlaster from source for manual testing.
 #
 #   scripts/dev-run.sh [--real] [flutter run args...]
