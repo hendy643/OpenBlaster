@@ -1,0 +1,5 @@
+Claude has been used in this project in the following areas:
+
+1. Helping with setting up the licensing.
+2. Writing the README and the DEVELOPMENT files.
+3. Writing packaging scripts for the project.
