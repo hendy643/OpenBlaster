@@ -6,12 +6,17 @@ libc (`mmap` of the card's BAR2 window for the LEDs).
 
 ## Requirements
 
-* the Flutter SDK with its Linux desktop toolchain (`flutter doctor`), which brings CMake, Ninja, clang
-  and GTK 3
-* `libayatana-appindicator3` (the tray icon) and `libasound2` at run time
+`scripts/dev_setup.sh` installs everything for Ubuntu/Debian, Fedora and Arch-based distributions (it uses sudo):
 
-Arch/CachyOS: `sudo pacman -S flutter alsa-lib libayatana-appindicator` (flutter is in the AUR).
-Ubuntu: `sudo apt install libgtk-3-dev libayatana-appindicator3-dev libasound2-dev` and Flutter from its installer.
+* the Flutter SDK (cloned from Flutter's git repository at a fixed version, since only the AUR packages it) and the
+  Linux desktop toolchain it needs: clang, CMake, Ninja, GTK 3
+* the libraries the app is built and run with: `libasound` (ALSA) and `libayatana-appindicator3` (the tray icon)
+* the tools of the test scripts (`amixer`, `pactl`, `pw-cat`), `gh` for `scripts/release.sh`, and `appstreamcli`
+* the packaging tools, on every distribution, so any of them can build all four packages: `fpm` (from RubyGems),
+  `rpmbuild`, `zstd` and `bsdtar`
+
+`scripts/dev_setup.sh --check` only reports what is missing; `--dry-run` shows what it would install; `--help` lists
+the rest.
 
 ## Test
 
@@ -60,29 +65,36 @@ install/                     desktop entries, udev rule       scripts/  dev-run.
 ## Releasing
 
 1. Set `version:` in `app/pubspec.yaml` (e.g. `0.2.0+1`) and merge to master.
-2. Tag that commit and push the tag:
+2. Tag that commit and check it out:
 
    ```sh
-   git tag v0.2.0 && git push origin v0.2.0        # v0.2.0-rc.1 makes a pre-release of 0.2.0
+   git tag v0.2.0 && git checkout v0.2.0        # v0.2.0-rc.1 makes a pre-release of 0.2.0
    ```
 
-`.github/workflows/release.yml` then checks the tag is on master and matches the pubspec, runs analyze and the
-tests, and runs `scripts/package.sh`: it builds the release bundle **once**, stages it (`scripts/install.sh` into a
-`/usr` + `/etc` tree) and packages that tree with [fpm](https://fpm.readthedocs.io), so every package ships the same
-files.
+3. Run `scripts/release.sh`. It takes the most recent tag and checks that it is the checked-out commit, is on
+   `origin/master`, matches the pubspec version and that the tree is clean; runs analyze and the tests; runs
+   `scripts/package.sh`; writes `SHA256SUMS` and the release notes (the commits since the previous release, the
+   packages and their checksums, a link to the full changelog); pushes the tag if GitHub does not have it and
+   publishes everything with the `gh` CLI (it must be logged in). `--dry-run` does all of it except the pushes, so
+   you can read the notes first; `--help` lists the other options. A tag that is already on GitHub at another commit
+   is an error: it is never moved for you. An existing release for the tag is updated, with its files replaced.
 
-| Package | Made by | Checked in CI |
-|---|---|---|
-| tarball | `scripts/package.sh tar` | |
-| `.deb` | `scripts/package.sh deb` (fpm) | installed on Ubuntu 24.04, libraries resolve |
-| `.rpm` | `scripts/package.sh rpm` (fpm, rpmbuild) | installed on Fedora, libraries resolve |
-| Arch `.pkg.tar.zst` | `scripts/package.sh pacman` (fpm) | installed on Arch, libraries resolve |
+`scripts/package.sh` builds the release bundle **once**, stages it (`scripts/install.sh` into a `/usr` + `/etc`
+tree) and packages that tree with [fpm](https://fpm.readthedocs.io), so every package ships the same files.
 
-All of them and `SHA256SUMS` go on a GitHub release. Locally: `scripts/package.sh` (needs `fpm`, `rpmbuild`, `zstd`;
-`gem install --user-install fpm` and put `~/.local/share/gem/ruby/*/bin` on PATH). Dependencies per distro are in
+| Package | Made by |
+|---|---|
+| tarball | `scripts/package.sh tar` |
+| `.deb` | `scripts/package.sh deb` (fpm) |
+| `.rpm` | `scripts/package.sh rpm` (fpm, rpmbuild) |
+| Arch `.pkg.tar.zst` | `scripts/package.sh pacman` (fpm) |
+
+All of them and `SHA256SUMS` go on the GitHub release. `scripts/package.sh` needs `fpm`, `rpmbuild` and `zstd`
+(`gem install --user-install fpm`, and put `~/.local/share/gem/ruby/*/bin` on PATH). Dependencies per distro are in
 `scripts/package.sh`.
 
-The bundle is built on Ubuntu 24.04, so it needs glibc 2.39 or newer (Ubuntu 24.04+, Debian 13+, Fedora 40+, current Arch).
+The bundle needs at least the glibc of the machine that built it, so release from the oldest distribution you want to
+support (Ubuntu 24.04 means glibc 2.39: Ubuntu 24.04+, Debian 13+, Fedora 40+, current Arch).
 
 Lighting: the packages install the udev rule; add yourself to the `audio` group. Publishing to the AUR or an apt/dnf
 repository is not automated.
