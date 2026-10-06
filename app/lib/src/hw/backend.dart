@@ -27,6 +27,10 @@ abstract class Backend {
   /// Called with each control that changed, by [set] or behind our back (see [poll]).
   void Function(String id, int value)? onChange;
 
+  /// Called when something worth saving changed that no control reports: a backend's own bookkeeping (what to give
+  /// back when it is turned off). It is saved shortly after, like a control.
+  void Function()? onDirty;
+
   /// Look for changes made behind our back (another mixer); reports them through [onChange].
   void poll() {}
 
@@ -47,6 +51,7 @@ class CompositeBackend extends Backend {
   CompositeBackend(this._parts) {
     for (final b in _parts) {
       b.onChange = (id, v) => onChange?.call(id, v);
+      b.onDirty = () => onDirty?.call();
       for (final c in b.controls()) {
         _owner.putIfAbsent(c.id, () => b);
       }

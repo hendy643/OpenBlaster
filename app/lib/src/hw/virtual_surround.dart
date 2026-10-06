@@ -39,6 +39,10 @@ enum HrirKind {
   hesuvi7,
 }
 
+/// The card profile that exposes the card's 5.1 output (in the driver's channel order, see
+/// install/openblaster-ae5.conf).
+const surround51Profile = 'output:analog-surround-51+input:analog-stereo';
+
 class Hrir {
   const Hrir(this.path, this.kind, this.label);
   final String path;
@@ -342,6 +346,16 @@ abstract class PipeWireHost {
   /// The stereo analog output of the PCI device at [pciAddress] (e.g. 0000:0b:00.0), or null.
   String? sinkFor(String pciAddress);
 
+  /// The card's active profile (e.g. `output:analog-stereo+input:analog-stereo`), or null.
+  String? cardProfile(String pciAddress);
+
+  /// Makes [profile] the card's profile; true once it is active. Changing it makes PipeWire unmute the card's
+  /// front output, which the driver takes for "use the speakers": the caller must put Output Select back.
+  Future<bool> setCardProfile(String pciAddress, String profile);
+
+  /// The 5.1 analog output of the card, or null (the profile is not active).
+  String? surroundSinkFor(String pciAddress);
+
   /// Runs a PipeWire process hosting [conf]; true once its virtual sink exists. Replaces any earlier one.
   Future<bool> start(String conf);
   Future<void> stop();
@@ -388,6 +402,49 @@ class ProcessPipeWire implements PipeWireHost {
     ];
     return sinks.where((s) => s.contains('analog-stereo')).firstOrNull ??
         sinks.firstOrNull;
+  }
+
+  static String _cardName(String pciAddress) =>
+      'alsa_card.pci-${pciAddress.replaceAll(':', '_')}';
+
+  @override
+  String? cardProfile(String pciAddress) {
+    final cards = _run('pactl', ['list', 'cards']) ?? '';
+    final at = cards.indexOf('Name: ${_cardName(pciAddress)}');
+    if (at < 0) return null;
+    return RegExp(r'Active Profile: (\S+)').firstMatch(cards.substring(at))?[1];
+  }
+
+  @override
+  Future<bool> setCardProfile(String pciAddress, String profile) async {
+    if (_run('pactl', ['set-card-profile', _cardName(pciAddress), profile]) ==
+        null) {
+      return false;
+    }
+    for (var i = 0; i < 20; i++) {
+      // up to 2 s for the sinks to follow
+      if (cardProfile(pciAddress) == profile) {
+        // PipeWire unmutes the card's front output a moment later: the caller's Output Select must come after
+        await Future<void>.delayed(const Duration(milliseconds: 800));
+        return true;
+      }
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+    }
+    return false;
+  }
+
+  @override
+  String? surroundSinkFor(String pciAddress) {
+    final key = 'pci-${pciAddress.replaceAll(':', '_')}';
+    for (final line in (_run('pactl', ['list', 'short', 'sinks']) ?? '').split(
+      '\n',
+    )) {
+      final f = line.split('\t');
+      if (f.length > 1 && f[1].contains(key) && f[1].contains('surround-51')) {
+        return f[1];
+      }
+    }
+    return null;
   }
 
   @override
@@ -459,6 +516,34 @@ class MemoryPipeWire implements PipeWireHost {
   @override
   String? sinkFor(String pciAddress) =>
       'alsa_output.pci-${pciAddress.replaceAll(':', '_')}.analog-stereo';
+
+  final profiles = <String, String>{}; // pci address -> the card's profile
+  final profileChanges = <String>[];
+  bool failProfile = false;
+
+  @override
+  String? cardProfile(String pciAddress) =>
+      profiles[pciAddress] ?? 'output:analog-stereo+input:analog-stereo';
+
+  @override
+  Future<bool> setCardProfile(String pciAddress, String profile) async {
+    if (failProfile) return false;
+    profiles[pciAddress] = profile;
+    profileChanges.add(profile);
+    // the sinks of the old profile go; if one was the default, PipeWire moves it to the new profile's sink
+    final base = 'alsa_output.pci-${pciAddress.replaceAll(':', '_')}';
+    if (def != null && def!.startsWith(base)) {
+      def =
+          '$base.${profile == surround51Profile ? 'analog-surround-51' : 'analog-stereo'}';
+    }
+    return true;
+  }
+
+  @override
+  String? surroundSinkFor(String pciAddress) =>
+      cardProfile(pciAddress) == surround51Profile
+      ? 'alsa_output.pci-${pciAddress.replaceAll(':', '_')}.analog-surround-51'
+      : null;
 
   @override
   Future<bool> start(String conf) async {

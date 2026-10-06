@@ -4,6 +4,7 @@ import 'dart:async';
 import '../models.dart';
 import 'backend.dart';
 import 'store.dart';
+import 'surround_backend.dart';
 import 'virtual_surround.dart';
 
 /// Virtual surround for headphones: while it is on, a PipeWire virtual 7.1 sink takes the surround audio from apps,
@@ -17,9 +18,11 @@ class VirtualSurroundBackend extends Backend {
     required SettingsStore store,
     required List<Hrir> profiles,
     required this.targetSink,
+    Serial? serial,
   }) : _store = store,
        // ignore: prefer_initializing_formals
-       _profiles = profiles {
+       _profiles = profiles,
+       serial = serial ?? Serial() {
     _load(store.load());
     if (_enabled || _previousDefault != null)
       _schedule(); // start it again, or undo what a crash left behind
@@ -31,15 +34,23 @@ class VirtualSurroundBackend extends Backend {
   final String? Function() targetSink;
   final SettingsStore _store;
   final List<Hrir> _profiles;
+  final Serial serial;
+
+  /// Called when this is turned on, before anything is done: the card's own Surround is exclusive with it.
+  void Function()? onEnabling;
 
   bool _enabled = false;
   int _profile = 0;
   String? _previousDefault; // the default output to give back
   bool _dirty = false;
-  Future<void> _chain = Future.value();
+
+  void _markDirty() {
+    _dirty = true;
+    onDirty?.call();
+  }
 
   /// Completes when everything asked for so far has been done (for tests).
-  Future<void> get idle => _chain;
+  Future<void> get idle => serial.idle;
 
   void _load(String? text) {
     for (final line in (text ?? '').split('\n')) {
@@ -98,6 +109,7 @@ class VirtualSurroundBackend extends Backend {
         if (value == 1 && _profiles.isEmpty) return SetResult.failed;
         if ((value == 1) == _enabled) return SetResult.ok;
         _enabled = value == 1;
+        if (_enabled) onEnabling?.call();
       case 'vsurround.profile':
         if (value < 0 || value >= _profiles.length) return SetResult.outOfRange;
         if (value == _profile) return SetResult.ok;
@@ -105,14 +117,14 @@ class VirtualSurroundBackend extends Backend {
       default:
         return SetResult.unknownControl;
     }
-    _dirty = true;
+    _markDirty();
     onChange?.call(id, value);
     _schedule(); // the effect only matters while it runs, but _apply knows that
     return SetResult.ok;
   }
 
   void _schedule() {
-    _chain = _chain.then((_) => _apply()).catchError((Object _) {});
+    serial.run(_apply);
   }
 
   Future<void> _apply() async {
@@ -122,7 +134,7 @@ class VirtualSurroundBackend extends Backend {
       if (back != null) {
         host.setDefaultSink(back);
         _previousDefault = null;
-        _dirty = true;
+        _markDirty();
       }
       return;
     }
@@ -134,14 +146,14 @@ class VirtualSurroundBackend extends Backend {
         );
     if (!ok) {
       _enabled = false; // say so: the window puts the switch back
-      _dirty = true;
+      _markDirty();
       onChange?.call('vsurround.enable', 0);
       return;
     }
     final current = host.defaultSink();
     if (current != virtualSinkName) {
       _previousDefault = current;
-      _dirty = true;
+      _markDirty();
       // a new sink starts at 100%: give it the volume the output had, or the switch would be a lot louder
       final volume = current == null ? null : host.sinkVolume(current);
       if (volume != null) host.setSinkVolume(virtualSinkName, volume);

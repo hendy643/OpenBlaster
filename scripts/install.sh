@@ -32,7 +32,8 @@ sed "s/@VERSION@/$version/; s/@DATE@/$(date -u +%F)/" packaging/org.openblaster.
 
 install -d "$dest$prefix/lib/openblaster" "$dest$prefix/bin" "$dest$prefix/share/applications" \
     "$dest$prefix/share/icons/hicolor/scalable/apps" "$dest$prefix/share/metainfo" \
-    "$dest$prefix/share/licenses/openblaster" "$dest$prefix/lib/udev/rules.d" "$dest/etc/xdg/autostart"
+    "$dest$prefix/share/licenses/openblaster" "$dest$prefix/lib/udev/rules.d" "$dest/etc/xdg/autostart" \
+    "$dest$prefix/share/alsa-card-profile/mixer/profile-sets"
 cp -a "$bundle/." "$dest$prefix/lib/openblaster/"
 ln -sf "../lib/openblaster/openblaster" "$dest$prefix/bin/openblaster"
 install -m 644 install/org.openblaster.OpenBlaster.desktop "$dest$prefix/share/applications/"
@@ -43,6 +44,10 @@ install -m 644 app/assets/openblaster.svg \
 install -m 644 "$metainfo" "$dest$prefix/share/metainfo/org.openblaster.OpenBlaster.metainfo.xml"
 install -m 644 LICENSES/Apache-2.0.txt "$dest$prefix/share/licenses/openblaster/Apache-2.0.txt"
 install -m 644 install/70-openblaster.rules "$dest$prefix/lib/udev/rules.d/70-openblaster.rules"
+# the card's 5.1 profile in the driver's channel order (the udev rule above points the card at it; PipeWire reads
+# profile sets from /usr/share/alsa-card-profile, so with another prefix it is not found)
+install -m 644 install/openblaster-ae5.conf \
+    "$dest$prefix/share/alsa-card-profile/mixer/profile-sets/openblaster-ae5.conf"
 # the virtual-surround impulse responses, if there are any (see hrtf/README.md)
 if [[ -n $(find hrtf \( -name '*.wav' -o -name '*.sofa' \) -print -quit 2>/dev/null) ]]; then
     install -d "$dest$prefix/share/openblaster"
@@ -50,5 +55,5 @@ if [[ -n $(find hrtf \( -name '*.wav' -o -name '*.sofa' \) -print -quit 2>/dev/n
     rm -f "$dest$prefix/share/openblaster/hrtf/README.md"
 fi
 if [[ -z $dest ]]; then
-    echo "installed. For the LEDs: add yourself to the audio group, then reboot (or: sudo udevadm control --reload && sudo udevadm trigger -s pci)."
+    echo "installed. For the LEDs and the card's own surround: add yourself to the audio group, then reboot (or: sudo udevadm control --reload && sudo udevadm trigger; then restart PipeWire)."
 fi

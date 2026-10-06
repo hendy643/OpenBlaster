@@ -13,6 +13,7 @@ import 'hw/lighting_backend.dart';
 import 'hw/persistent_backend.dart';
 import 'hw/snd_alsa_io.dart';
 import 'hw/store.dart';
+import 'hw/surround_backend.dart';
 import 'hw/sysfs_bar2.dart';
 import 'hw/virtual_surround.dart';
 import 'hw/virtual_surround_backend.dart';
@@ -54,7 +55,9 @@ class LocalClient implements OpenBlasterClient {
           AlsaBackend(io),
           FileStore('$dir/controls-$id.conf'),
         );
-        final parts = <Backend>[alsa];
+        // the card's Surround switch, and the virtual surround, which are exclusive
+        final surround = _surround(card, id, dir, alsa, log);
+        final parts = <Backend>[surround.controls];
         if (card.hasLighting) {
           try {
             final bar = SysfsBar2.open(
@@ -71,45 +74,80 @@ class LocalClient implements OpenBlasterClient {
             log?.call('lighting unavailable on card ${card.card}: $e');
           }
         }
-        final surround = _virtualSurround(card, id, dir, log);
-        if (surround != null) parts.add(surround);
-        return parts.length == 1 ? alsa : CompositeBackend(parts);
+        final virtual = surround.virtual;
+        if (virtual != null) parts.add(virtual);
+        return parts.length == 1 ? parts.single : CompositeBackend(parts);
       },
     );
     return client;
   }
 
-  /// Virtual surround, if PipeWire and at least one HRTF file are there.
-  static Backend? _virtualSurround(
+  /// The card's controls with its own Surround (which sets the card up for 5.1), and the virtual surround (an
+  /// HRTF file per effect), if PipeWire is there. The two are exclusive: each turns the other off.
+  static ({Backend controls, Backend? virtual}) _surround(
     CardInfo card,
     String id,
     String dir,
+    Backend alsa,
     void Function(String)? log,
   ) {
-    final profiles = findHrirs();
     final host = ProcessPipeWire(
       '${Platform.environment['XDG_RUNTIME_DIR'] ?? Directory.systemTemp.path}/openblaster',
     );
-    if (profiles.isEmpty || !host.available) {
-      log?.call('virtual surround unavailable: no PipeWire or no HRIR file');
-      return null;
+    if (!host.available) {
+      log?.call(
+        'surround set-up and virtual surround unavailable: no PipeWire',
+      );
+      return (controls: alsa, virtual: null);
     }
-    // the card's PCI address, for finding its analog output in PipeWire
-    String? pci;
+    // the card's PCI address, for finding its outputs in PipeWire
+    final String pci;
     try {
       pci = Directory('/sys/class/sound/card${card.card}/device')
           .resolveSymbolicLinksSync()
           .split('/')
           .last;
     } on FileSystemException {
-      return null;
+      return (controls: alsa, virtual: null);
     }
-    return VirtualSurroundBackend(
-      host: host,
-      store: FileStore('$dir/virtual-surround-$id.conf'),
-      profiles: profiles,
-      targetSink: () => host.sinkFor(pci!),
+    return _exclusive(
+      alsa,
+      host,
+      pci,
+      FileStore('$dir/surround-$id.conf'),
+      FileStore('$dir/virtual-surround-$id.conf'),
+      findHrirs(),
     );
+  }
+
+  /// [alsa] with its Surround switch made exclusive with a virtual surround of [profiles] (none: no virtual surround).
+  static ({Backend controls, Backend? virtual}) _exclusive(
+    Backend alsa,
+    PipeWireHost host,
+    String pci,
+    SettingsStore surroundStore,
+    SettingsStore virtualStore,
+    List<Hrir> profiles,
+  ) {
+    final serial = Serial();
+    final hardware = SurroundBackend(
+      inner: alsa,
+      host: host,
+      pci: pci,
+      store: surroundStore,
+      serial: serial,
+    );
+    if (profiles.isEmpty) return (controls: hardware, virtual: null);
+    final virtual = VirtualSurroundBackend(
+      host: host,
+      store: virtualStore,
+      profiles: profiles,
+      targetSink: () => host.sinkFor(pci),
+      serial: serial,
+    );
+    virtual.onEnabling = () => hardware.set(SurroundBackend.id, 0);
+    hardware.onEnabling = () => virtual.set('vsurround.enable', 0);
+    return (controls: hardware, virtual: virtual);
   }
 
   /// A made-up AE-5 Plus: nothing on a real card changes.
@@ -122,13 +160,14 @@ class LocalClient implements OpenBlasterClient {
         name: 'Sound BlasterX AE-5 Plus (demo)',
       ),
     ],
-    factory: (_) => CompositeBackend([
-      AlsaBackend(makeDemoCard()),
-      LightingBackend(LedPort(MemoryBar2()), MemoryStore()),
-      VirtualSurroundBackend(
-        host: MemoryPipeWire(),
-        store: MemoryStore(),
-        profiles: const [
+    factory: (_) {
+      final surround = _exclusive(
+        AlsaBackend(makeDemoCard()),
+        MemoryPipeWire(),
+        '0000:63:00.0',
+        MemoryStore(),
+        MemoryStore(),
+        const [
           Hrir(
             '/demo/atmos.wav',
             HrirKind.hesuvi,
@@ -140,9 +179,13 @@ class LocalClient implements OpenBlasterClient {
           Hrir('/demo/sbx67.wav', HrirKind.hesuvi, 'SBX Surround 67%'),
           Hrir('/demo/sbx100.wav', HrirKind.hesuvi, 'SBX Surround 100%'),
         ],
-        targetSink: () => 'alsa_output.demo.analog-stereo',
-      ),
-    ]),
+      );
+      return CompositeBackend([
+        surround.controls,
+        LightingBackend(LedPort(MemoryBar2()), MemoryStore()),
+        surround.virtual!,
+      ]);
+    },
   );
 
   static String _defaultStateDir() {
@@ -267,12 +310,18 @@ class _Dev {
       _tickSoon(
         0,
       ); // show a change now, not at the next (slow, if nothing moves) tick
-      _save ??= Timer(owner.saveAfter, () {
-        _save = null;
-        backend.flush();
-      });
+      _saveSoon();
     };
+    backend.onDirty = _saveSoon;
     _tickSoon(0);
+  }
+
+  /// Everything that changed is written shortly after the first change, not one write per change.
+  void _saveSoon() {
+    _save ??= Timer(owner.saveAfter, () {
+      _save = null;
+      backend.flush();
+    });
   }
 
   void _tickSoon(int ms) {

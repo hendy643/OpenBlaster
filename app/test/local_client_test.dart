@@ -166,4 +166,57 @@ void main() {
     );
     await demo.close();
   });
+
+  test('in the demo the card\'s Surround and the virtual surround turn each other off', () async {
+    final demo = LocalClient.demo();
+    final d = (await demo.devices()).single;
+    Future<int?> value(String id) async =>
+        (await demo.controls(d)).firstWhere((c) => c.id == id).value;
+    await demo.set(d, 'fx.surround', 1);
+    await demo.set(d, 'vsurround.enable', 1);
+    await Future<void>.delayed(const Duration(milliseconds: 50));
+    expect(await value('vsurround.enable'), 1);
+    expect(await value('fx.surround'), 0);
+    await demo.set(d, 'fx.surround', 1);
+    await Future<void>.delayed(const Duration(milliseconds: 50));
+    expect(await value('fx.surround'), 1);
+    expect(await value('vsurround.enable'), 0);
+    await demo.close();
+  });
+
+  test(
+    'bookkeeping that no control reports is saved soon, like a control',
+    () async {
+      final keeper = _Keeper();
+      final other = LocalClient(
+        finder: () => cards,
+        factory: (_) => CompositeBackend([AlsaBackend(alsa), keeper]),
+        saveAfter: const Duration(milliseconds: 30),
+      );
+      await other.devices();
+      keeper.touch();
+      keeper.touch();
+      await pause(100);
+      expect(keeper.flushes, 1); // one write for both, soon after the first
+      await other.close();
+    },
+  );
+}
+
+/// A backend with something to save but no control that changes.
+class _Keeper extends Backend {
+  int flushes = 0;
+  void touch() => onDirty?.call();
+
+  @override
+  List<Control> controls() => const [];
+
+  @override
+  int? get(String id) => null;
+
+  @override
+  SetResult set(String id, int value) => SetResult.unknownControl;
+
+  @override
+  void flush() => flushes++;
 }
